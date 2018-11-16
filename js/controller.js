@@ -1,7 +1,8 @@
 class Controller{
-    constructor(crew,oxen,firepower,money){
+    constructor(crew,food,oxen,firepower,money,eventTypes){
         this.ui = new UI();
-        this.caravan = new Caravan(crew,oxen,firepower,money,this.ui)
+        this.eventTypes = eventTypes;
+        this.caravan = new Caravan(crew,food,oxen,firepower,money,this.ui);
         this.updateWeight();
         this.start();
     }
@@ -21,7 +22,7 @@ class Controller{
             droppedGuns++;
         }
         if(droppedGuns){
-            this.ui.notify(`dropped ${droppedGuns} guns`,"negative");
+            this.ui.notify(`dropped ${droppedGuns} guns`,"negative",this);
         }
 
         while(this.caravan.weight > this.caravan.capacity && this.caravan.food){
@@ -30,7 +31,7 @@ class Controller{
             droppedFood++;
         }
         if(droppedFood){
-            this.ui.notify(`dropped ${droppedFood} food`,"negative");
+            this.ui.notify(`dropped ${droppedFood} food`,"negative",this);
         }
     }
 
@@ -55,7 +56,7 @@ class Controller{
     step(){
         this.updateGame();
         if(this.gameActive){
-//            this.gameActive=false;
+            //            this.gameActive=false;
             setTimeout(this.step.bind(this),this.caravan.trailStats.GAME_SPEED);
         }
     }
@@ -65,7 +66,7 @@ class Controller{
         this.consumeFood();
 
         if(this.caravan.food === 0){
-            this.ui.notify('Your caravan starved to death', 'negative');
+            this.ui.notify('Your caravan starved to death', 'negative',this);
             this.gameActive = false;
             return;
         }
@@ -77,15 +78,19 @@ class Controller{
         if(this.caravan.crew<=0){
             this.caravan.crew = 0;
             this.gameActive = false;
-            this.ui.notify("everyone died","negative");
+            this.ui.notify("everyone died","negative",this);
             return;
 
         }
 
         if(this.caravan.distance >=this.caravan.trailStats.FINAL_DISTANCE){
-            this.ui.notify('You have returned home', 'negative');
+            this.ui.notify('You have returned home', 'negative',this);
             this.gameActive = false;
             return;
+        }
+
+        if(Math.random() <= this.caravan.trailStats.EVENT_PROBABILITY) {
+            this.generateEvent();
         }
 
     }
@@ -98,6 +103,26 @@ class Controller{
         this.gameActive = true;
         this.step();
     }
+
+    generateEvent(){
+        let index = Math.floor(Math.random()*this.eventTypes.length);
+        let eventData = this.eventTypes[index];
+
+        if(eventData.type =='STAT-CHANGE'){
+            this.statChange(eventData)
+        };
+
+    }
+
+
+    statChange(eventData){
+        if(eventData.value + this.caravan[eventData.stat] >= 0) {
+            this.caravan[eventData.stat] += eventData.value;
+            this.ui.notify(eventData.text + Math.abs(eventData.value), eventData.notification,this);
+        }
+    }
+
+
 
 
 }
