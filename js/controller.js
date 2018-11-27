@@ -1,6 +1,6 @@
 class Controller{
     constructor(crew,food,oxen,firepower,money,eventTypes){
-        this.ui = new UI();
+        this.ui = new UI(this);
         this.eventTypes = eventTypes;
         this.caravan = new Caravan(crew,food,oxen,firepower,money,this.ui);
         this.updateWeight();
@@ -84,7 +84,7 @@ class Controller{
         }
 
         if(this.caravan.distance >=this.caravan.trailStats.FINAL_DISTANCE){
-            this.ui.notify('You have returned home', 'negative',this);
+            this.ui.notify('You have returned home', 'positive',this);
             this.gameActive = false;
             return;
         }
@@ -112,6 +112,13 @@ class Controller{
             this.statChange(eventData)
         };
 
+        if(eventData.type == 'ATTACK'){
+            this.pause();
+
+            this.ui.notify(eventData.text, eventData.notification, this);
+            this.attackEvent(eventData);
+        }
+
     }
 
 
@@ -120,6 +127,51 @@ class Controller{
             this.caravan[eventData.stat] += eventData.value;
             this.ui.notify(eventData.text + Math.abs(eventData.value), eventData.notification,this);
         }
+    }
+
+
+    attackEvent(eventData){
+        let firepower = Math.round((0.7 + 0.6 * Math.random()) * this.caravan.trailStats.ENEMY_FIREPOWER_AVG);
+        let gold = Math.round((0.7 + 0.6 * Math.random()) * this.caravan.trailStats.ENEMY_GOLD_AVG);
+
+        this.ui.showAttack(firepower, gold,this);
+    }
+
+
+    fight(firepower, gold){
+        console.log("fight")
+        let damage = Math.ceil(Math.max(0, firepower * 2 * Math.random() - this.caravan.firepower));
+
+        if(damage < this.caravan.crew) {
+            this.caravan.crew -= damage;
+            this.caravan.money += gold;
+            this.ui.notify(damage + ' people were killed fighting', 'negative', this);
+            this.ui.notify('Found $' + gold, 'gold', this);
+
+        }
+        else {
+            this.caravan.crew = 0;
+            this.ui.notify('Everybody died in the fight', 'negative', this);
+        }
+        this.ui.hideAttack();
+        this.play();
+    }
+
+    runaway(firepower){
+
+        let damage = Math.ceil(Math.max(0, firepower * Math.random()/2));
+
+        //check there are survivors
+        if(damage < this.caravan.crew) {
+            this.caravan.crew -= damage;
+            this.ui.notify(damage + ' people were killed running', 'negative',this);
+        }
+        else {
+            this.caravan.crew = 0;
+            this.ui.notify('Everybody died running away', 'negative',this);
+        }
+        this.ui.hideAttack();
+        this.play();
     }
 
 
