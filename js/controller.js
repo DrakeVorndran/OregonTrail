@@ -112,12 +112,23 @@ class Controller{
             this.statChange(eventData)
         };
 
+        if(eventData.type == 'SHOP'){
+            this.pause();
+
+            //notify user
+            this.ui.notify(eventData.text, eventData.notification, this);
+
+            //prepare event
+            this.shopEvent(eventData,this);
+        }
+
         if(eventData.type == 'ATTACK'){
             this.pause();
 
             this.ui.notify(eventData.text, eventData.notification, this);
             this.attackEvent(eventData);
         }
+
 
     }
 
@@ -127,6 +138,50 @@ class Controller{
             this.caravan[eventData.stat] += eventData.value;
             this.ui.notify(eventData.text + Math.abs(eventData.value), eventData.notification,this);
         }
+    }
+
+    shopEvent(eventData){
+        let numProds = Math.ceil(Math.random() * 4);
+
+        //product list
+        let products = [];
+        let j, priceFactor;
+
+        for(let i = 0; i < numProds; i++) {
+            //random product
+            j = Math.floor(Math.random() * eventData.products.length);
+
+            //multiply price by random factor +-30%
+            priceFactor = 0.7 + 0.6 * Math.random();
+
+            products.push({
+                item: eventData.products[j].item,
+                qty: eventData.products[j].qty,
+                price: Math.round(eventData.products[j].price * priceFactor)
+            });
+        }
+
+        this.ui.showShop(products,this);
+    }
+
+
+    buyProduct(product){
+        if(product.price > this.caravan.money) {
+            this.ui.notify('Not enough money', 'negative',this);
+            return false;
+        }
+
+        this.caravan.money -= product.price;
+
+        this.caravan[product.item] += +product.qty;
+
+        this.ui.notify('Bought ' + product.qty + ' x ' + product.item, 'positive',this);
+
+        //update weight
+        this.updateWeight();
+
+        //update visuals
+        this.ui.updateDOM(this);
     }
 
 
@@ -139,7 +194,6 @@ class Controller{
 
 
     fight(firepower, gold){
-        console.log("fight")
         let damage = Math.ceil(Math.max(0, firepower * 2 * Math.random() - this.caravan.firepower));
 
         if(damage < this.caravan.crew) {

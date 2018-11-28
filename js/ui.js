@@ -1,9 +1,9 @@
 class UI{
     constructor(){
-            this.attackInitiated = false;
-        
+        this.attackInitiated = false;
+
     }
-    
+
     notify(message, type, game){
         document.getElementById('updates-area').innerHTML = '<div class="update-' + type + '">Day '+ Math.ceil(game.caravan.day) + ': ' + message+'</div>' + document.getElementById('updates-area').innerHTML;
     }
@@ -48,8 +48,54 @@ class UI{
             this.attackInitiated = true;
         }
     };
-    
+
     hideAttack(){
         document.getElementById('attack').classList.add('hidden');
+    }
+
+
+
+    showShop(products,game){
+        let shopDiv = document.getElementById('shop');
+        shopDiv.classList.remove('hidden');
+
+        //init the shop just once
+        if(!this.shopInitiated) {
+
+            //event delegation
+            shopDiv.addEventListener('click', function(e){
+                //what was clicked
+                let target = e.target || e.src;
+
+                //exit button
+                if(target.tagName == 'BUTTON') {
+                    //resume journey
+                    shopDiv.classList.add('hidden');
+                    game.play();
+                }
+                else if(target.tagName == 'DIV' && target.className.match(/product/)) {
+
+                    game.buyProduct({
+                        item: target.getAttribute('data-item'),
+                        qty: target.getAttribute('data-qty'),
+                        price: target.getAttribute('data-price')
+                    });
+
+                }
+            });
+
+            this.shopInitiated = true;
+        }
+
+        //clear existing content
+        let prodsDiv = document.getElementById('prods');
+        prodsDiv.innerHTML = '';
+
+        //show products
+        let product;
+        for(let i=0; i < products.length; i++) {
+            product = products[i];
+            prodsDiv.innerHTML += '<div class="product" data-qty="' + product.qty + '" data-item="' + product.item + '" data-price="' + product.price + '">' + product.qty + ' ' + product.item + ' - $' + product.price + '</div>';
+        }
     }
 }
